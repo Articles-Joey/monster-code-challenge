@@ -13,10 +13,56 @@
 
   </header>
 
-  @if (submitted()) {
-  <div class="success-message" role="status">
-    Flight information submitted successfully!
-  </div>
+  @if (loading()) {
+    <div class="loading-message">Loading flight info…</div>
+  } @else if (existingFlightInfo() && !submitted()) {
+    <div class="submitted-info">
+      <h2>Your Submitted Flight Info</h2>
+      <div class="info-row"><strong>Submitted At:</strong> {{ existingFlightInfo()!.submittedAt | date:'MM/dd/yyyy h:mm a' }}</div>
+      <div class="info-row"><strong>Airline:</strong> {{ existingFlightInfo()!.airline }}</div>
+      <div class="info-row"><strong>Arrival Date:</strong> {{ existingFlightInfo()!.arrivalDate }}</div>
+      <div class="info-row"><strong>Arrival Time:</strong> {{ existingFlightInfo()!.arrivalTime }}</div>
+      <div class="info-row"><strong>Flight Number:</strong> {{ existingFlightInfo()!.flightNumber }}</div>
+      <div class="info-row"><strong>Number of Guests:</strong> {{ existingFlightInfo()!.numOfGuests }}</div>
+      @if (existingFlightInfo()!.comments) {
+        <div class="info-row"><strong>Comments:</strong> {{ existingFlightInfo()!.comments }}</div>
+      }
+      @if (errorMessage()) {
+        <div class="error-message" role="alert">{{ errorMessage() }}</div>
+      }
+      <button class="primary remove-btn" type="button" (click)="onRemoveFlightInfo()" [disabled]="isDeleting()">
+        @if (isDeleting()) {
+          Removing…
+        } @else {
+          <mat-icon aria-hidden="false" aria-label="Delete icon" fontIcon="delete"></mat-icon>
+          Remove & Re-enter
+        }
+      </button>
+    </div>
+  } @else if (submitted()) {
+    <div class="success-message" role="status">
+      Flight information submitted successfully!
+    </div>
+    <div class="submitted-info">
+      <h2>Your Submitted Flight Info</h2>
+      <!-- <div class="info-row"><strong>Submitted At:</strong> {{ existingFlightInfo()!.submittedAt }}</div> -->
+      <div class="info-row"><strong>Airline:</strong> {{ existingFlightInfo()!.airline }}</div>
+      <div class="info-row"><strong>Arrival Date:</strong> {{ existingFlightInfo()!.arrivalDate }}</div>
+      <div class="info-row"><strong>Arrival Time:</strong> {{ existingFlightInfo()!.arrivalTime }}</div>
+      <div class="info-row"><strong>Flight Number:</strong> {{ existingFlightInfo()!.flightNumber }}</div>
+      <div class="info-row"><strong>Number of Guests:</strong> {{ existingFlightInfo()!.numOfGuests }}</div>
+      @if (existingFlightInfo()!.comments) {
+        <div class="info-row"><strong>Comments:</strong> {{ existingFlightInfo()!.comments }}</div>
+      }
+      <button class="primary remove-btn" type="button" (click)="onRemoveFlightInfo()" [disabled]="isDeleting()">
+        @if (isDeleting()) {
+          Removing…
+        } @else {
+          <mat-icon aria-hidden="false" aria-label="Delete icon" fontIcon="delete"></mat-icon>
+          Remove & Re-enter
+        }
+      </button>
+    </div>
   } @else {
   <form [formGroup]="flightForm" (ngSubmit)="onSubmit()">
     @if (errorMessage()) {
@@ -86,7 +132,7 @@
       <span class="field-error">Must have at least 1 guest</span>
       }
       @if (flightForm.controls.numOfGuests.touched && flightForm.controls.numOfGuests.hasError('max')) {
-      <span class="field-error">Maximum 67 guests allowed</span>
+      <span class="field-error">Maximum 67 guests allowed 💀🤷🤷‍♂️</span>
       }
     </div>
 

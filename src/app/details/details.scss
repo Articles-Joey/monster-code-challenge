@@ -123,3 +123,41 @@ button[type='submit'] {
         flex-direction: column;
     }
 }
+
+.loading-message {
+    text-align: center;
+    color: #fff;
+    font-size: 1rem;
+    padding: 2rem;
+}
+
+.submitted-info {
+    background: var(--card-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 10%);
+    padding: 2rem;
+    color: #fff;
+
+    h2 {
+        margin: 0 0 1.25rem;
+        font-size: 1.25rem;
+    }
+
+    .info-row {
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+
+        strong {
+            margin-right: 0.35rem;
+        }
+    }
+
+    .remove-btn {
+        margin-top: 1.5rem;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+    }
+}

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, PLATFORM_ID, signal } from '@angular/core';
+import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -16,21 +17,23 @@ export interface FlightInfoPayload {
   flightNumber: string;
   numOfGuests: number;
   comments?: string;
+  submittedAt?: string;
 }
 
 @Component({
   selector: 'app-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, MatTimepickerModule, MatIconModule],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, MatTimepickerModule, MatIconModule, DatePipe],
   templateUrl: './details.html',
   styleUrl: './details.scss',
 })
-export class Details {
+export class Details implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
+  private readonly platformId = inject(PLATFORM_ID);
   protected readonly auth = inject(AuthService);
 
-  private readonly apiUrl = 'https://us-central1-crm-sdk.cloudfunctions.net/flightInfoChallenge';
+  private readonly apiUrl = '/api/flight-info';
 
   protected readonly airlines = [
     'Alaska Airlines',
@@ -69,6 +72,32 @@ export class Details {
   protected readonly isSubmitting = signal(false);
   protected readonly submitted = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly loading = signal(true);
+  protected readonly existingFlightInfo = signal<FlightInfoPayload | null>(null);
+  protected readonly isDeleting = signal(false);
+
+  async ngOnInit(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    try {
+      const res = await firstValueFrom(
+        this.http.get<{ exists: boolean; data?: FlightInfoPayload }>(this.apiUrl),
+      );
+      if (res.exists && res.data) {
+        // Firestore may return submittedAt as a Timestamp object
+        const raw = res.data as any;
+        if (raw.submittedAt && typeof raw.submittedAt === 'object' && raw.submittedAt._seconds) {
+          raw.submittedAt = new Date(raw.submittedAt._seconds * 1000).toISOString();
+        }
+        this.existingFlightInfo.set(res.data);
+      }
+    } catch {
+      // No existing data or error – show the form
+    } finally {
+      this.loading.set(false);
+    }
+  }
 
   async onSubmit(): Promise<void> {
     if (this.flightForm.invalid) {
@@ -87,20 +116,43 @@ export class Details {
       arrivalDate: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
       arrivalTime: `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`,
     };
-    const headers = new HttpHeaders({
-      token: 'WW91IG11c3QgYmUgdGhlIGN1cmlvdXMgdHlwZS4gIEJyaW5nIHRoaXMgdXAgYXQgdGhlIGludGVydmlldyBmb3IgYm9udXMgcG9pbnRzICEh',
-      candidate: 'Joey G',
-    });
 
     try {
-      await firstValueFrom(
-        this.http.post(this.apiUrl, payload, { headers, observe: 'response' })
+      const response = await firstValueFrom(
+        this.http.post(this.apiUrl, payload, { observe: 'response' })
       );
+      console.log('Response status:', response.status);
+      console.log('Response body:', response.body);
+      this.existingFlightInfo.set(payload);
       this.submitted.set(true);
-    } catch {
+    } catch (err: any) {
+      console.log('Error status:', err.status);
+      console.log('Error body:', err.error);
       this.errorMessage.set('Submission failed. Please try again.');
     } finally {
       this.isSubmitting.set(false);
+    }
+  }
+
+  async onRemoveFlightInfo(): Promise<void> {
+    this.isDeleting.set(true);
+    try {
+      await firstValueFrom(this.http.delete(this.apiUrl));
+      // Reset state so the form is shown again
+      this.existingFlightInfo.set(null);
+      this.submitted.set(false);
+      this.flightForm.reset({
+        airline: '',
+        arrivalDate: new Date(),
+        arrivalTime: null,
+        flightNumber: '',
+        numOfGuests: 1,
+        comments: '',
+      });
+    } catch {
+      this.errorMessage.set('Failed to remove flight info. Please try again.');
+    } finally {
+      this.isDeleting.set(false);
     }
   }
 

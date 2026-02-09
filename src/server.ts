@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { readFileSync, existsSync } from 'node:fs';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 const COOKIE_SECRET = process.env['COOKIE_SECRET'] || 'change-this-secret-in-production';
@@ -76,6 +76,8 @@ app.post('/api/login', async (req, res) => {
       sameSite: 'lax',
     });
 
+    await snapshot.docs[0].ref.update({ last_login: FieldValue.serverTimestamp() });
+
     res.json({ success: true });
   } catch (error) {
     console.error('Login error:', error);
@@ -93,6 +95,111 @@ app.post('/api/logout', (_req, res) => {
 app.get('/api/check-session', (req, res) => {
   const session = (req as unknown as { signedCookies: Record<string, string> }).signedCookies['session'];
   res.json({ authenticated: !!session, username: session || null });
+});
+
+// ── Helper: get username from signed cookie ─────────────────────
+function getSessionUser(req: express.Request): string | null {
+  return (req as unknown as { signedCookies: Record<string, string> }).signedCookies['session'] || null;
+}
+
+/** GET /api/flight-info – fetch existing flight info for the authenticated user */
+app.get('/api/flight-info', async (req, res) => {
+  const username = getSessionUser(req);
+  if (!username) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  try {
+    const snapshot = await db.collection('users').where('username', '==', username).limit(1).get();
+    if (snapshot.empty) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const userData = snapshot.docs[0].data();
+    if (!userData['flightInfo']) {
+      res.json({ exists: false });
+      return;
+    }
+    res.json({ exists: true, data: userData['flightInfo'] });
+  } catch (error) {
+    console.error('Fetch flight info error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/** POST /api/flight-info – proxy to challenge API, save to Firestore on success */
+app.post('/api/flight-info', async (req, res) => {
+  const username = getSessionUser(req);
+  if (!username) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  const payload = req.body;
+
+  try {
+    // Forward to the external challenge API
+    const externalRes = await fetch(
+      'https://us-central1-crm-sdk.cloudfunctions.net/flightInfoChallenge',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          token: 'WW91IG11c3QgYmUgdGhlIGN1cmlvdXMgdHlwZS4gIEJyaW5nIHRoaXMgdXAgYXQgdGhlIGludGVydmlldyBmb3IgYm9udXMgcG9pbnRzICEh',
+          candidate: 'Joey G',
+        },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    console.log('External API status:', externalRes.status);
+    const responseText = await externalRes.text();
+    console.log('External API body:', responseText);
+
+    if (!externalRes.ok) {
+      res.status(externalRes.status).json({ error: responseText || 'External API error' });
+      return;
+    }
+
+    // Save to the user's document in the users collection
+    const snapshot = await db.collection('users').where('username', '==', username).limit(1).get();
+    if (snapshot.empty) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    await snapshot.docs[0].ref.update({
+      flightInfo: { ...payload, submittedAt: new Date().toISOString() },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Submit flight info error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/** DELETE /api/flight-info – remove flight info for the authenticated user */
+app.delete('/api/flight-info', async (req, res) => {
+  const username = getSessionUser(req);
+  if (!username) {
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
+  }
+
+  try {
+    const snapshot = await db.collection('users').where('username', '==', username).limit(1).get();
+    if (snapshot.empty) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const { FieldValue: FV } = await import('firebase-admin/firestore');
+    await snapshot.docs[0].ref.update({ flightInfo: FV.delete() });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete flight info error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // ── Server-side route protection ────────────────────────────────
