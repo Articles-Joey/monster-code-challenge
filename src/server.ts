@@ -8,7 +8,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
@@ -18,8 +18,14 @@ const COOKIE_SECRET = process.env['COOKIE_SECRET'] || 'change-this-secret-in-pro
 // ── Firebase Admin ──────────────────────────────────────────────
 if (!getApps().length) {
   const keyPath = join(import.meta.dirname, '../../../serviceAccountKey.json');
-  const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf-8'));
-  initializeApp({ credential: cert(serviceAccount) });
+  if (existsSync(keyPath)) {
+    // Local dev: use service account key file
+    const serviceAccount = JSON.parse(readFileSync(keyPath, 'utf-8'));
+    initializeApp({ credential: cert(serviceAccount) });
+  } else {
+    // Production (Firebase App Hosting): use Application Default Credentials
+    initializeApp();
+  }
 }
 const db = getFirestore();
 
