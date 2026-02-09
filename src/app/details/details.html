@@ -1,78 +1,108 @@
 <div class="details-container">
   <header class="details-header">
-    <h1>Flight Details</h1>
-    <button type="button" class="logout-btn primary" (click)="onLogout()">Logout</button>
+
+    <div class="brand">
+      <img src="img/logo.svg" alt="Logo" class="brand-logo" width="40" />
+      <h1>Flight Details</h1>
+    </div>
+
+    <button type="button" class="logout-btn primary" (click)="onLogout()">
+      <mat-icon class="small-icon" aria-hidden="false" aria-label="Send icon" fontIcon="logout"></mat-icon>
+      Logout
+    </button>
+
   </header>
 
   @if (submitted()) {
-    <div class="success-message" role="status">
-      Flight information submitted successfully!
-    </div>
+  <div class="success-message" role="status">
+    Flight information submitted successfully!
+  </div>
   } @else {
-    <form [formGroup]="flightForm" (ngSubmit)="onSubmit()">
-      @if (errorMessage()) {
-        <div class="error-message" role="alert">{{ errorMessage() }}</div>
-      }
-      <div class="form-field">
+  <form [formGroup]="flightForm" (ngSubmit)="onSubmit()">
+    @if (errorMessage()) {
+    <div class="error-message" role="alert">{{ errorMessage() }}</div>
+    }
+    <div class="form-field">
+
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <!-- <mat-icon class="small-icon" aria-hidden="false" aria-label="plane_contrails icon" fontIcon="plane_contrails"></mat-icon> -->
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+          <path
+            d="m377-80-57-57 184-183 56 56L377-80Zm199 0-56-57 163-163 57 56L576-80ZM137-520l-57-56 164-164 56 57-163 163Zm0 200-57-57 184-183 56 56-183 184Zm623-21-96-239-78 78 19 94-47 48-71-128-127-70 47-48 94 19 78-78-239-95 60-57 287 45 91-90q9-9 20-13.5t22-4.5q11 0 22 4.5t20 13.5q9 8 13.5 19t4.5 22q0 11-4.5 22.5T862-778l-91 90 45 287-56 60Z" />
+        </svg>
+  
         <label for="airline">Airline</label>
-        <input id="airline" type="text" formControlName="airline" list="airlineList" placeholder="Type or select an airline" />
-        <datalist id="airlineList">
-          @for (a of airlines; track a) {
-            <option [value]="a"></option>
-          }
-        </datalist>
-        @if (flightForm.controls.airline.touched && flightForm.controls.airline.hasError('required')) {
-          <span class="field-error">Airline is required</span>
-        }
       </div>
 
-      <div class="form-field">
-        <label for="arrivalDate">Arrival Date</label>
-        <input id="arrivalDate" type="date" formControlName="arrivalDate" />
+      <input id="airline" type="text" formControlName="airline" list="airlineList"
+        placeholder="Type or select an airline" />
+      <datalist id="airlineList">
+        @for (a of airlines; track a) {
+        <option [value]="a"></option>
+        }
+      </datalist>
+      @if (flightForm.controls.airline.touched && flightForm.controls.airline.hasError('required')) {
+      <span class="field-error">Airline is required</span>
+      }
+    </div>
+
+    <div class="date-time-row">
+      <mat-form-field>
+        <mat-label>Arrival Date</mat-label>
+        <input matInput [min]="today" [matDatepicker]="datepicker" formControlName="arrivalDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="datepicker"></mat-datepicker-toggle>
+        <mat-datepicker #datepicker></mat-datepicker>
         @if (flightForm.controls.arrivalDate.touched && flightForm.controls.arrivalDate.hasError('required')) {
-          <span class="field-error">Arrival date is required</span>
+        <mat-error>Arrival date is required</mat-error>
         }
-      </div>
+      </mat-form-field>
 
-      <div class="form-field">
-        <label for="arrivalTime">Arrival Time</label>
-        <input id="arrivalTime" type="time" formControlName="arrivalTime" />
+      <mat-form-field>
+        <mat-label>Arrival Time</mat-label>
+        <input matInput [matTimepicker]="timepicker" formControlName="arrivalTime" />
+        <mat-timepicker #timepicker />
+        <mat-timepicker-toggle [for]="timepicker" matSuffix />
         @if (flightForm.controls.arrivalTime.touched && flightForm.controls.arrivalTime.hasError('required')) {
-          <span class="field-error">Arrival time is required</span>
+        <mat-error>Arrival time is required</mat-error>
         }
-      </div>
+      </mat-form-field>
+    </div>
 
-      <div class="form-field">
-        <label for="flightNumber">Flight Number</label>
-        <input id="flightNumber" type="text" formControlName="flightNumber" />
-        @if (flightForm.controls.flightNumber.touched && flightForm.controls.flightNumber.hasError('required')) {
-          <span class="field-error">Flight number is required</span>
-        }
-      </div>
+    <div class="form-field">
+      <label for="flightNumber">Flight Number</label>
+      <input id="flightNumber" type="text" formControlName="flightNumber" />
+      @if (flightForm.controls.flightNumber.touched && flightForm.controls.flightNumber.hasError('required')) {
+      <span class="field-error">Flight number is required</span>
+      }
+    </div>
 
-      <div class="form-field">
-        <label for="numOfGuests">Number of Guests</label>
-        <input id="numOfGuests" type="number" formControlName="numOfGuests" min="1" />
-        @if (flightForm.controls.numOfGuests.touched && flightForm.controls.numOfGuests.hasError('required')) {
-          <span class="field-error">Number of guests is required</span>
-        }
-        @if (flightForm.controls.numOfGuests.touched && flightForm.controls.numOfGuests.hasError('min')) {
-          <span class="field-error">Must have at least 1 guest</span>
-        }
-      </div>
+    <div class="form-field">
+      <label for="numOfGuests">Number of Guests</label>
+      <input id="numOfGuests" type="number" formControlName="numOfGuests" min="1" max="67" />
+      @if (flightForm.controls.numOfGuests.touched && flightForm.controls.numOfGuests.hasError('required')) {
+      <span class="field-error">Number of guests is required</span>
+      }
+      @if (flightForm.controls.numOfGuests.touched && flightForm.controls.numOfGuests.hasError('min')) {
+      <span class="field-error">Must have at least 1 guest</span>
+      }
+      @if (flightForm.controls.numOfGuests.touched && flightForm.controls.numOfGuests.hasError('max')) {
+      <span class="field-error">Maximum 67 guests allowed</span>
+      }
+    </div>
 
-      <div class="form-field">
-        <label for="comments">Comments (optional)</label>
-        <textarea id="comments" formControlName="comments" rows="3"></textarea>
-      </div>
+    <div class="form-field">
+      <label for="comments">Comments (optional)</label>
+      <textarea id="comments" formControlName="comments" rows="3"></textarea>
+    </div>
 
-      <button class="primary" type="submit" [disabled]="isSubmitting()">
-        @if (isSubmitting()) {
-          Submitting…
-        } @else {
-          Submit Flight Info
-        }
-      </button>
-    </form>
+    <button class="primary" type="submit" [disabled]="isSubmitting()">
+      @if (isSubmitting()) {
+      Submitting…
+      } @else {
+      <mat-icon aria-hidden="false" aria-label="Send icon" fontIcon="send"></mat-icon>
+      Submit Flight Info
+      }
+    </button>
+  </form>
   }
 </div>

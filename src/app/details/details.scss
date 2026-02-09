@@ -100,3 +100,26 @@ form {
 button[type='submit'] {
     width: 100%;
 }
+
+.brand {
+    display: flex;
+    align-items: center;
+
+    .brand-logo {
+        // display: inline-block;
+        margin-right: 0.5rem;
+    }
+}
+
+.date-time-row {
+    display: flex;
+    gap: 1rem;
+
+    mat-form-field {
+        flex: 1;
+    }
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+    }
+}

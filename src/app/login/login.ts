@@ -22,6 +22,7 @@ export class Login {
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly isSubmitting = signal(false);
+  protected readonly passwordFocused = signal(false);
 
   async onSubmit(): Promise<void> {
     if (this.loginForm.invalid) {

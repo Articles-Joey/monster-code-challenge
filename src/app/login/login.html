@@ -1,7 +1,10 @@
 <div class="login-container">
     <div class="login-card">
 
-        <img src="img/logo.svg" alt="Logo" class="login-logo" />
+        <div class="logo-wrapper">
+            <img src="img/logo.svg" alt="Logo" class="login-logo" />
+            <img src="img/sunglasses.svg" alt="" class="sunglasses" [class.visible]="passwordFocused()" />
+        </div>
         <h1>Monster Sign In</h1>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
@@ -19,7 +22,8 @@
 
             <div class="form-field">
                 <label for="password">Password</label>
-                <input id="password" type="password" formControlName="password" autocomplete="current-password" />
+                <input id="password" type="password" formControlName="password" autocomplete="current-password"
+                    (focus)="passwordFocused.set(true)" (blur)="passwordFocused.set(false)" />
                 @if (loginForm.controls.password.touched && loginForm.controls.password.hasError('required')) {
                 <span class="field-error">Password is required</span>
                 }

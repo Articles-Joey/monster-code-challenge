@@ -3,6 +3,11 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatTimepickerModule } from '@angular/material/timepicker';
+import { MatIconModule } from '@angular/material/icon';
 
 export interface FlightInfoPayload {
   airline: string;
@@ -16,7 +21,7 @@ export interface FlightInfoPayload {
 @Component({
   selector: 'app-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, MatTimepickerModule, MatIconModule],
   templateUrl: './details.html',
   styleUrl: './details.scss',
 })
@@ -25,7 +30,7 @@ export class Details {
   private readonly http = inject(HttpClient);
   protected readonly auth = inject(AuthService);
 
-  private readonly apiUrl = 'https://000000042.xyz/api/flight-info';
+  private readonly apiUrl = 'https://us-central1-crm-sdk.cloudfunctions.net/flightInfoChallenge';
 
   protected readonly airlines = [
     'Alaska Airlines',
@@ -50,12 +55,14 @@ export class Details {
     'WestJet',
   ];
 
+  protected readonly today = new Date(new Date().setHours(0, 0, 0, 0));
+
   protected readonly flightForm = this.fb.nonNullable.group({
     airline: ['', Validators.required],
-    arrivalDate: ['', Validators.required],
-    arrivalTime: ['', Validators.required],
+    arrivalDate: [new Date() as Date | null, Validators.required],
+    arrivalTime: [null as Date | null, Validators.required],
     flightNumber: ['', Validators.required],
-    numOfGuests: [1, [Validators.required, Validators.min(1)]],
+    numOfGuests: [1, [Validators.required, Validators.min(1), Validators.max(67)]],
     comments: [''],
   });
 
@@ -72,7 +79,14 @@ export class Details {
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
-    const payload: FlightInfoPayload = this.flightForm.getRawValue();
+    const raw = this.flightForm.getRawValue();
+    const d = raw.arrivalDate!;
+    const t = raw.arrivalTime!;
+    const payload: FlightInfoPayload = {
+      ...raw,
+      arrivalDate: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+      arrivalTime: `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`,
+    };
     const headers = new HttpHeaders({
       token: 'WW91IG11c3QgYmUgdGhlIGN1cmlvdXMgdHlwZS4gIEJyaW5nIHRoaXMgdXAgYXQgdGhlIGludGVydmlldyBmb3IgYm9udXMgcG9pbnRzICEh',
       candidate: 'Joey G',
