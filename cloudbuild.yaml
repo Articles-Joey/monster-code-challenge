@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/gsutil'
+  args: ['cp', 'gs://monster-42/serviceAccountKey.json', '/workspace/serviceAccountKey.json']
+- name: 'gcr.io/cloud-builders/npm' # Example for a Node.js project
+  args: ['install']
